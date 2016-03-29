@@ -135,7 +135,7 @@ int main()
 
     memcpy(payload, flash + 0x2000, 0x1000);
 
-    firmOpen(&ctx9, "firm_2_08006800_n3ds_10_2.bin");
+    firmOpen(&ctx9, "firm_2_08006800.bin");
 
     //int ntrHeaderAdr = 0x080E1CB4;
     int ntrHeaderAdr = find_ntrcard_header_address(firmGetData(&ctx9), firmGetSize(&ctx9));
