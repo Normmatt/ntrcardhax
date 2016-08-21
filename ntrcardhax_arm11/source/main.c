@@ -21,7 +21,7 @@
 #include <inttypes.h>
 
 #include <3ds.h>
-#include "khax.h"
+#include "svchax.h"
 
 vu32 gpu_regs[10];
 vu16* NTRCARD_MCNT = 0x1EC64000;
@@ -369,8 +369,11 @@ int main(int argc, char** argv)
 
 	LoadArm9Payload();
 
-	Result ret = khaxInit();
-	printf("khaxInit returned %08lx\n", ret);
+	svchax_init(true);
+	if(!__ctr_svchax || !__ctr_svchax_srv) {
+		printf("Failed to acquire arm11 kernel access.\n");
+		goto exit;
+	}
 
 	u32* resp = svcBackdoor(find_version_specific_addresses);
 	printf("wrapperAdr   : %08x\n",wrapperAdr);
@@ -396,7 +399,7 @@ int main(int argc, char** argv)
 	(u32*)printf("FS Response:\n%08x %08x %08x %08x\n",
 				resp[0], resp[1], resp[2], resp[3]);*/
 
-	/*ret = FSUSER_CardSlotPowerOff(&card_status);
+	/*Result ret = FSUSER_CardSlotPowerOff(&card_status);
 	printf("card_status = %d (ret=%08X)\n",card_status,ret);
 
 	ret = FSUSER_CardSlotGetCardIFPowerStatus(&card_status);
@@ -498,6 +501,7 @@ int main(int argc, char** argv)
 	}
 
 	//closing all services even more so
+exit:
 	gfxExit();
 	return 0;
 }
