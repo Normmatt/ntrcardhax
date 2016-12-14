@@ -2,8 +2,8 @@
 #ifndef __CRC_H
 #define __CRC_H
 
-#include <cstdio>
-#include <cinttypes>
+#include <stdio.h>
+#include <inttypes.h>
 
 extern unsigned short crc16tab[];
 

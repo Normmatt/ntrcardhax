@@ -1,4 +1,4 @@
-#include <cstdio>
+#include <stdio.h>
 #include "crc.h"
 
 unsigned short crc16tab[] =

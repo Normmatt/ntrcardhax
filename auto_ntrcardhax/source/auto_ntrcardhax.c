@@ -20,7 +20,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <cstring>
+#include <string.h>
+//#include <cstring>
 #include "ERTFS_types.h"
 #include "crc.h"
 #include "nand_addr.h"
@@ -99,13 +100,15 @@ int main()
     rtfs_cfg.mem_region_pool = (struct region_fragment *)(NTRCARD_HEADER_ADDR + 0x4);
 
     for(int i = 0; i < 26; i++)
-        rtfs_cfg.drno_to_dr_map[i] = (ddrive*)(NTRCARD_HEADER_ADDR + 0);
+        rtfs_cfg.drno_to_dr_map[i] = (struct ddrive*)(NTRCARD_HEADER_ADDR + 0);
 
     //Copy rtfs_cfg into right place (taking into account wrapping)
     uint32_t* prtfs_cfg32 = (uint32_t*)&rtfs_cfg;
+    printf("rtfsCfgAdrDiff %08X, rtfsCopyLen: %d\n", rtfsCfgAdrDiff, rtfsCopyLen);
     for(int i = 0; i < rtfsCopyLen; i+=4) //Don't need full rtfs struct
     {
         wrappedAdr = (rtfsCfgAdrDiff + i) & 0xFFF;
+        printf("addr: %08X data: %08X\n", wrappedAdr, prtfs_cfg32[i/4]);
         if((wrappedAdr >= 0x14) && (wrappedAdr <= 0x60))
         {
             printf("There is a conflict with the ntrcard header when wrapped... have fun fixing this! (%08X)\n", wrappedAdr);
