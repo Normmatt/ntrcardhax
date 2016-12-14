@@ -1,6 +1,3 @@
-ifeq ($(strip $(NAND_VERSION)),)
-$(error "Please set NAND_VERSION.")
-endif
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
@@ -93,7 +90,6 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@cp nand_addrdb/$(NAND_VERSION)_addr.h include/nand_addr.h
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------

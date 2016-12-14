@@ -26,6 +26,15 @@
 #include "crc.h"
 #include "nand_addr.h"
 
+struct nand_configure n3ds_config[6] = {
+    { 17120, 0x80e2b34, 0x80e5e4c, 0x80ed3d0 },
+    { 18182, 0x80e1974, 0x80e4c8c, 0x80ec210 },
+    { 19218, 0x80e1974, 0x80e4c8c, 0x80ec210 },
+    { 20262, 0x80e1974, 0x80e4c8c, 0x80ec210 },
+    { 21288, 0x80f9d34, 0x80fcc4c, 0x81041d0 },
+    { 22313, 0x80f9d34, 0x80fcc4c, 0x81041d0 },
+};
+
 //	 ldr sp,=0x22140000
 //
 //	 ;Disable IRQ
@@ -54,8 +63,33 @@ unsigned char loader_bin[0x44] =
     0x00, 0x00, 0xF0, 0x23,
 };
 
-int main()
+int main(int argc, char **argv)
 {
+    if (argc < 3) {
+        printf("%s (n|o) <firm_version>\n", argv[0]);
+        return 1;
+    }
+
+    uint32_t version = atoi(argv[2]);
+
+    struct nand_configure *config = NULL;
+
+    if (argv[1][0] == 'o' || argv[1][1] == 'O') {
+        printf("old not support yet\n");
+        return 1;
+    } else if (argv[1][0] == 'n' || argv[1][0] == 'N') {
+        for (int i = 0; i < 6; i++) {
+            if (n3ds_config[i].version == version) {
+                config = &n3ds_config[i];
+                break;
+            }
+        }
+    }
+    if (!config) {
+        printf("unsupport firmware\n");
+        return 1;
+    }
+
     uint8_t *payload = (uint8_t *)calloc(0x1000,1);
     RTFS_CFG rtfs_cfg = {};
 
@@ -69,7 +103,7 @@ int main()
 
     memcpy(payload, flash + 0x2000, 0x1000);
 
-    int rtfsCfgAdrDiff = RTFS_CFG_ADDR - NTRCARD_HEADER_ADDR;
+    int rtfsCfgAdrDiff = config->rtfs_cfg_addr - config->ntrcard_hader_addr;
     int rtfsCopyLen = sizeof(RTFS_CFG) - 0x2C; //Don't need full rtfs struct
 
     int wrappedAdr = (rtfsCfgAdrDiff) & 0xFFF;
@@ -97,18 +131,18 @@ int main()
     //NF writes two u32s
     //[adr + 0] = 0x0000000B
     //[adr + 4] = 0x00000000
-    rtfs_cfg.mem_region_pool = (struct region_fragment *)(NTRCARD_HEADER_ADDR + 0x4);
+    rtfs_cfg.mem_region_pool = (struct region_fragment *)(config->ntrcard_hader_addr + 0x4);
 
     for(int i = 0; i < 26; i++)
-        rtfs_cfg.drno_to_dr_map[i] = (struct ddrive*)(NTRCARD_HEADER_ADDR + 0);
+        rtfs_cfg.drno_to_dr_map[i] = (struct ddrive*)(config->ntrcard_hader_addr + 0);
 
     //Copy rtfs_cfg into right place (taking into account wrapping)
     uint32_t* prtfs_cfg32 = (uint32_t*)&rtfs_cfg;
-    printf("rtfsCfgAdrDiff %08X, rtfsCopyLen: %d\n", rtfsCfgAdrDiff, rtfsCopyLen);
+    //printf("rtfsCfgAdrDiff %08X, rtfsCopyLen: %d\n", rtfsCfgAdrDiff, rtfsCopyLen);
     for(int i = 0; i < rtfsCopyLen; i+=4) //Don't need full rtfs struct
     {
         wrappedAdr = (rtfsCfgAdrDiff + i) & 0xFFF;
-        printf("addr: %08X data: %08X\n", wrappedAdr, prtfs_cfg32[i/4]);
+        //printf("addr: %08X data: %08X\n", wrappedAdr, prtfs_cfg32[i/4]);
         if((wrappedAdr >= 0x14) && (wrappedAdr <= 0x60))
         {
             printf("There is a conflict with the ntrcard header when wrapped... have fun fixing this! (%08X)\n", wrappedAdr);
@@ -123,9 +157,9 @@ int main()
         *(uint32_t*)&payload[wrappedAdr] = prtfs_cfg32[i/4];
     }
 
-    *(uint32_t*)&payload[0x2EC] = RTFS_HANDLE_ADDR; //Some handle rtfs uses
+    *(uint32_t*)&payload[0x2EC] = config->rtfs_handle_addr; //Some handle rtfs uses
     *(uint32_t*)&payload[0x2F0] = 0x41414141; //Bypass FAT corruption error
-    *(uint32_t*)&payload[0x31C] = NTRCARD_HEADER_ADDR + 0x2A8; //This is the PC we want to jump to (from a BLX)
+    *(uint32_t*)&payload[0x31C] = config->ntrcard_hader_addr + 0x2A8; //This is the PC we want to jump to (from a BLX)
 
     memcpy(&payload[0x2A8], loader_bin, 0x44);
 

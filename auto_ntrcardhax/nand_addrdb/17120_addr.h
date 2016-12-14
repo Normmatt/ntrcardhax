@@ -1,3 +1,0 @@
-#define NTRCARD_HEADER_ADDR 0x80e2b34
-#define RTFS_CFG_ADDR       0x80e5e4c
-#define RTFS_HANDLE_ADDR    0x80ed3d0
